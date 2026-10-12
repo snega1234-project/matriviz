@@ -5,7 +5,13 @@
  * Streams in-memory Seaborn charts (bytes/base64) and automatically deletes uploaded files on refresh.
  */
 
-const API_BASE = 'http://127.0.0.1:5000/api';
+// Dynamic API Base:
+// - Uses 'http://127.0.0.1:5000/api' if opened standalone on port 3300 or file://
+// - Uses relative '/api' when served by FastAPI on Render or localhost:5000
+const API_BASE = (window.location.protocol === 'file:' || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '3300'))
+  ? 'http://127.0.0.1:5000/api'
+  : '/api';
+
 
 // Application State
 const state = {
@@ -301,7 +307,7 @@ function clearData() {
       body: JSON.stringify({ filename: fileToDelete })
     }).then(() => {
       console.log(`File ${fileToDelete} deleted from server.`);
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   state.activeFileName = '';
