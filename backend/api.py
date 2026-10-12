@@ -14,7 +14,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from werkzeug.utils import secure_filename
-import analysis
+from backend import analysis
 
 # Initialize FastAPI Application
 app = FastAPI(
