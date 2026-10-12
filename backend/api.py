@@ -1,5 +1,5 @@
 """
-DataVista FastAPI Backend Module
+Metriviz FastAPI Backend Module
 High-performance asynchronous REST API using FastAPI.
 Connects frontend requests to the Pandas, NumPy, and Seaborn data analysis engine.
 Strictly upload-driven: No static sample datasets.
@@ -7,31 +7,13 @@ Streams in-memory chart image bytes and automatically deletes files on refresh.
 """
 
 import os
-import sys
 import uuid
 import json
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-
-# Ensure backend directory is in sys.path
-BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
-if BACKEND_DIR not in sys.path:
-    sys.path.insert(0, BACKEND_DIR)
-
-try:
-    from werkzeug.utils import secure_filename
-except ImportError:
-    import re
-    import unicodedata
-    def secure_filename(filename: str) -> str:
-        filename = unicodedata.normalize("NFKD", filename)
-        filename = re.sub(r"[^\w.-]", "_", filename)
-        return filename.strip("._")
-
+from werkzeug.utils import secure_filename
 try:
     from backend import analysis
 except ImportError:
@@ -39,7 +21,7 @@ except ImportError:
 
 # Initialize FastAPI Application
 app = FastAPI(
-    title="DataVista Analytics API",
+    title="Metriviz Analytics API",
     description="FastAPI Backend for CSV Data Analytics, Pandas/NumPy manipulations, and Seaborn visual plots",
     version="3.0.0"
 )
@@ -73,7 +55,7 @@ async def health_check():
     """Health check endpoint to verify FastAPI backend service is active."""
     return {
         "status": "success",
-        "message": "DataVista FastAPI Backend (api.py + analysis.py) is active and ready for CSV uploads.",
+        "message": "Metriviz FastAPI Backend (api.py + analysis.py) is active and ready for CSV uploads.",
         "framework": "FastAPI",
         "version": "3.0.0"
     }
@@ -82,13 +64,14 @@ async def health_check():
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     """
-    Receives user-uploaded CSV file from frontend, stores it temporarily in backend/uploads,
+    Receives user-uploaded CSV or Excel file from frontend, stores it temporarily in backend/uploads,
     and runs Pandas analysis via analysis.py to extract columns, types, and summary metrics.
     """
-    if not file.filename or not file.filename.lower().endswith('.csv'):
+    allowed_exts = ('.csv', '.xlsx', '.xls')
+    if not file.filename or not file.filename.lower().endswith(allowed_exts):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only .csv files are supported."
+            detail="Only .csv, .xlsx, and .xls files are supported."
         )
 
     original_name = secure_filename(file.filename)
@@ -185,18 +168,6 @@ async def cleanup_file(request: Request):
     }
 
 
-
-# Mount static frontend directory to serve index.html, style.css, app.js
-FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
-if os.path.isdir(FRONTEND_DIR):
-    @app.get("/")
-    async def serve_index():
-        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
-
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
-
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    print(f"Starting DataVista FastAPI Backend on port {port} ...")
-    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=False)
+    print("Starting Metriviz FastAPI Backend on http://127.0.0.1:5000 ...")
+    uvicorn.run("api:app", host="0.0.0.0", port=5000, reload=False)
