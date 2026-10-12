@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from werkzeug.utils import secure_filename
-import analysis
+from backend import analysis
 
 # Initialize FastAPI Application
 app = FastAPI(
