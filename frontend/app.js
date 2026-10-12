@@ -5,7 +5,10 @@
  * Streams in-memory Seaborn charts (bytes/base64) and automatically deletes uploaded files on refresh.
  */
 
-const API_BASE = 'http://127.0.0.1:5000/api';
+// Same-origin in production (Render serves UI + API together); local dev uses :5000
+const API_BASE = (['localhost', '127.0.0.1', '0.0.0.0'].includes(location.hostname) && location.port !== '5000')
+  ? 'http://127.0.0.1:5000/api'
+  : '/api';
 
 // Application State
 const state = {
