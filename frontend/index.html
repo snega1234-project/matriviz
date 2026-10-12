@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metriviz | Full-Stack CSV Analytics</title>
+  <meta name="description" content="Upload CSV files to Python backend and generate statistical visualizations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js for optional interactive canvas view -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+
+<body class="dark-theme">
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Metri<span>viz</span></h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="themeToggleBtn" class="icon-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="main-layout">
+      <!-- Left Configuration Panel -->
+      <aside class="control-panel">
+        <!-- Section 1: CSV Upload to Backend -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="step-badge">1</span>
+            <h3>Upload CSV (To Backend)</h3>
+          </div>
+
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="csvFileInput" accept=".csv" class="file-input" />
+            <div class="drop-content">
+              <div class="upload-icon-wrapper">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <p class="drop-title">Upload <strong>.csv</strong> to Backend</p>
+              <p class="drop-sub">Drag & drop or <span class="browse-link">browse</span></p>
+              <span class="file-format-badge">Only .CSV Supported</span>
+            </div>
+          </div>
+
+          <!-- Active File Info Chip -->
+          <div id="fileInfoCard" class="file-info-card hidden">
+            <div class="file-icon-mini">📦</div>
+            <div class="file-meta">
+              <span id="loadedFileName" class="file-name">data.csv</span>
+              <span id="loadedFileSize" class="file-size">Saved on server</span>
+            </div>
+            <button id="removeFileBtn" class="remove-btn" title="Remove active file">✕</button>
+          </div>
+        </div>
+
+        <!-- Section 2: Axes Mapping (X and Y axis) -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="step-badge">2</span>
+            <h3>Select Axes</h3>
+          </div>
+
+          <div class="axes-grid">
+            <!-- X Axis Selector -->
+            <div class="form-group">
+              <label for="xAxisSelect" class="axis-label">
+                <span class="axis-indicator x-ind">X</span> X-Axis (Categories / Column)
+              </label>
+              <div class="select-wrapper">
+                <select id="xAxisSelect" class="custom-select" disabled>
+                  <option value="">Upload CSV first...</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Y Axis Selector -->
+            <div class="form-group">
+              <label for="yAxisSelect" class="axis-label">
+                <span class="axis-indicator y-ind">Y</span> Y-Axis (Values / Metric)
+              </label>
+              <div class="select-wrapper">
+                <select id="yAxisSelect" class="custom-select" disabled>
+                  <option value="">Upload CSV first...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Chart List -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="step-badge">3</span>
+            <h3>Chart List</h3>
+          </div>
+
+          <div class="chart-type-list" id="chartTypeList">
+            <button class="chart-type-card active" data-chart-type="bar" id="chartTypeBar">
+              <span class="chart-emoji">📊</span>
+              <span class="chart-label">Bar Chart</span>
+            </button>
+            <button class="chart-type-card" data-chart-type="line" id="chartTypeLine">
+              <span class="chart-emoji">📈</span>
+              <span class="chart-label">Line Chart</span>
+            </button>
+            <button class="chart-type-card" data-chart-type="pie" id="chartTypePie">
+              <span class="chart-emoji">🥧</span>
+              <span class="chart-label">Pie Chart</span>
+            </button>
+            <button class="chart-type-card" data-chart-type="doughnut" id="chartTypeDoughnut">
+              <span class="chart-emoji">🍩</span>
+              <span class="chart-label">Doughnut Chart</span>
+            </button>
+            <button class="chart-type-card" data-chart-type="scatter" id="chartTypeScatter">
+              <span class="chart-emoji">🟣</span>
+              <span class="chart-label">Scatter Plot</span>
+            </button>
+            <button class="chart-type-card" data-chart-type="area" id="chartTypeArea">
+              <span class="chart-emoji">📉</span>
+              <span class="chart-label">Area Chart</span>
+            </button>
+            <button class="chart-type-card" data-chart-type="hist" id="chartTypeHist">
+              <span class="chart-emoji">📶</span>
+              <span class="chart-label">Histogram</span>
+            </button>
+            <button class="chart-type-card" data-chart-type="box" id="chartTypeBox">
+              <span class="chart-emoji">📦</span>
+              <span class="chart-label">Box Plot</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 4: Palette & Options -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="step-badge">4</span>
+            <h3>Color Palette</h3>
+          </div>
+
+          <div class="palette-selector" id="paletteSelector">
+            <button class="palette-swatch active" data-palette="cyber" title="sns crest">
+              <span class="swatch-dots cyber"></span> Crest
+            </button>
+            <button class="palette-swatch" data-palette="emerald" title="sns viridis">
+              <span class="swatch-dots emerald"></span> Viridis
+            </button>
+            <button class="palette-swatch" data-palette="sunset" title="sns flare">
+              <span class="swatch-dots sunset"></span> Flare
+            </button>
+            <button class="palette-swatch" data-palette="berry" title="sns mako">
+              <span class="swatch-dots berry"></span> Mako
+            </button>
+          </div>
+
+          <div class="panel-actions">
+            <button id="saveChartBtn" class="secondary-btn" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              Save to Chart List
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 5: Saved Charts Gallery / History List -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="step-badge">5</span>
+            <h3>Saved Visualizations</h3>
+            <span id="savedCountBadge" class="mini-count">0</span>
+          </div>
+          <div id="savedChartsList" class="saved-charts-list">
+            <div class="empty-saved-placeholder">
+              <p>No saved charts yet.</p>
+              <small>Click "Save to Chart List" to bookmark visualizations.</small>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Main Analytics & Chart Display Area -->
+      <section class="display-area">
+        <!-- KPI Metric Cards Bar -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon rows-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="3" y1="15" x2="21" y2="15"></line>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Rows</span>
+              <span id="statRowCount" class="stat-value">0</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon cols-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="12" y1="3" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Columns</span>
+              <span id="statColCount" class="stat-value">0</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon metric-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 4H6l7 8-7 8h13"></path>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Sum</span>
+              <span id="statSumValue" class="stat-value">--</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon avg-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"></path>
+                <path d="m19 9-5 5-4-4-3 3"></path>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Average (Mean)</span>
+              <span id="statAvgValue" class="stat-value">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Chart Display Card -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h2 id="activeChartTitle">Statistical Visualization</h2>
+              <p id="activeChartSubtitle">Upload a CSV file and choose axes to query chart from Python backend.</p>
+            </div>
+
+            <div class="chart-card-actions">
+              <button id="viewToggleBtn" class="action-btn active"
+                title="Switch between Static Plot and Interactive Chart">
+                🎨 Static Plot
+              </button>
+              <button id="exportPngBtn" class="action-btn" title="Download chart as PNG image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export PNG
+              </button>
+            </div>
+          </div>
+
+          <!-- Canvas & Image Display Area -->
+          <div class="canvas-wrapper" id="canvasWrapper">
+            <!-- Seaborn Base64 Rendered Image -->
+            <img id="seabornChartImg" class="seaborn-img hidden" alt="Visual Plot" />
+
+            <!-- Interactive Canvas (Toggle Mode) -->
+            <canvas id="mainChartCanvas" class="hidden"></canvas>
+
+            <!-- Elegant Loading Overlay -->
+            <div id="chartLoadingOverlay" class="chart-loading-overlay hidden">
+              <div class="elegant-loader">
+                <div class="loader-orbital">
+                  <div class="orbital-glow"></div>
+                  <div class="orbital-ring ring-outer"></div>
+                  <div class="orbital-ring ring-mid"></div>
+                  <div class="orbital-ring ring-inner"></div>
+                  <div class="orbital-core">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="20" x2="18" y2="10"></line>
+                      <line x1="12" y1="20" x2="12" y2="4"></line>
+                      <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                  </div>
+                </div>
+                <div class="loader-content">
+                  <span class="loader-title">Generating Statistical Visualization</span>
+                  <span class="loader-subtitle">Computing metrics & rendering vector plot...</span>
+                  <div class="loader-bar-track">
+                    <div class="loader-bar-shimmer"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state placeholder before upload -->
+            <div id="chartPlaceholder" class="chart-placeholder">
+              <div class="placeholder-graphic">
+                <div class="pulsing-bar b1"></div>
+                <div class="pulsing-bar b2"></div>
+                <div class="pulsing-bar b3"></div>
+                <div class="pulsing-bar b4"></div>
+                <div class="pulsing-bar b5"></div>
+              </div>
+              <h3>Waiting for CSV Dataset</h3>
+              <p>Upload your CSV file to send to Python backend for data plotting.</p>
+              <div class="quick-start-chips">
+                <span>1. Upload .csv</span>
+                <span>➔</span>
+                <span>2. Select X & Y Axes</span>
+                <span>➔</span>
+                <span>3. Generates Plot</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CSV Data Table Preview Card (Loaded from Pandas) -->
+        <div class="data-preview-card">
+          <div class="preview-header">
+            <div class="preview-title">
+              <h3>Data Preview</h3>
+              <span id="previewRowBadge" class="table-badge">0 records</span>
+            </div>
+            <div class="preview-controls">
+              <input type="text" id="tableSearchInput" placeholder="Search rows..." class="table-search" />
+            </div>
+          </div>
+
+          <div class="table-scroll-container">
+            <table id="dataTable" class="custom-table">
+              <thead id="tableHead">
+                <tr>
+                  <th>Upload CSV to view data table</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <tr>
+                  <td class="empty-table-cell">No data loaded yet</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toastContainer" class="toast-container"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
