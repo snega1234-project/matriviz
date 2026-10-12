@@ -7,14 +7,35 @@ Streams in-memory chart image bytes and automatically deletes files on refresh.
 """
 
 import os
+import sys
 import uuid
 import json
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from werkzeug.utils import secure_filename
-from backend import analysis
+
+# Ensure backend directory is in sys.path
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
+
+try:
+    from werkzeug.utils import secure_filename
+except ImportError:
+    import re
+    import unicodedata
+    def secure_filename(filename: str) -> str:
+        filename = unicodedata.normalize("NFKD", filename)
+        filename = re.sub(r"[^\w.-]", "_", filename)
+        return filename.strip("._")
+
+try:
+    from backend import analysis
+except ImportError:
+    import analysis
 
 # Initialize FastAPI Application
 app = FastAPI(
@@ -164,6 +185,18 @@ async def cleanup_file(request: Request):
     }
 
 
+
+# Mount static frontend directory to serve index.html, style.css, app.js
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+if os.path.isdir(FRONTEND_DIR):
+    @app.get("/")
+    async def serve_index():
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+
 if __name__ == "__main__":
-    print("Starting DataVista FastAPI Backend on http://127.0.0.1:5000 ...")
-    uvicorn.run("api:app", host="0.0.0.0", port=5000, reload=False)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Starting DataVista FastAPI Backend on port {port} ...")
+    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=False)
