@@ -12,12 +12,10 @@ import json
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from werkzeug.utils import secure_filename
-try:
-    from backend import analysis
-except ImportError:
-    import analysis
+import analysis
 
 # Initialize FastAPI Application
 app = FastAPI(
@@ -168,6 +166,16 @@ async def cleanup_file(request: Request):
     }
 
 
+# Serve the frontend (index.html, app.js, style.css) from the same service so a
+# single Render web service hosts both UI and API. Mounted LAST so /api/* wins.
+FRONTEND_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend"
+)
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+
 if __name__ == "__main__":
-    print("Starting Metriviz FastAPI Backend on http://127.0.0.1:5000 ...")
-    uvicorn.run("api:app", host="0.0.0.0", port=5000, reload=False)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Starting Metriviz FastAPI Backend on http://0.0.0.0:{port} ...")
+    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=False)
