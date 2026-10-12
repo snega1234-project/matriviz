@@ -1,17 +1,11 @@
 /**
- * DataVista Frontend Application
- * Connects directly to the Python Flask Modular Backend (api.py + analysis.py)
+ * Metriviz Frontend Application
+ * Connects directly to the Python FastAPI Modular Backend (api.py + analysis.py)
  * Purely upload-driven: Direct CSV column mapping without aggregation.
  * Streams in-memory Seaborn charts (bytes/base64) and automatically deletes uploaded files on refresh.
  */
 
-// Dynamic API Base:
-// - Uses 'http://127.0.0.1:5000/api' if opened standalone on port 3300 or file://
-// - Uses relative '/api' when served by FastAPI on Render or localhost:5000
-const API_BASE = (window.location.protocol === 'file:' || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '3300'))
-  ? 'http://127.0.0.1:5000/api'
-  : '/api';
-
+const API_BASE = 'http://127.0.0.1:5000/api';
 
 // Application State
 const state = {
@@ -222,8 +216,10 @@ function handleFileSelect(e) {
 }
 
 async function uploadFileToBackend(file) {
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    showToast('Only .csv files are supported!', 'error');
+  const allowed = ['.csv', '.xlsx', '.xls'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(ext)) {
+    showToast('Only .csv, .xlsx, and .xls files are supported!', 'error');
     return;
   }
 
@@ -307,7 +303,7 @@ function clearData() {
       body: JSON.stringify({ filename: fileToDelete })
     }).then(() => {
       console.log(`File ${fileToDelete} deleted from server.`);
-    }).catch(() => { });
+    }).catch(() => {});
   }
 
   state.activeFileName = '';
@@ -322,8 +318,8 @@ function clearData() {
   fileInfoCard.classList.add('hidden');
   csvFileInput.value = '';
 
-  xAxisSelect.innerHTML = '<option value="">Upload CSV first...</option>';
-  yAxisSelect.innerHTML = '<option value="">Upload CSV first...</option>';
+  xAxisSelect.innerHTML = '<option value="">Upload dataset first...</option>';
+  yAxisSelect.innerHTML = '<option value="">Upload dataset first...</option>';
   xAxisSelect.disabled = true;
   yAxisSelect.disabled = true;
   saveChartBtn.disabled = true;
@@ -333,7 +329,7 @@ function clearData() {
   statSumValue.textContent = '--';
   statAvgValue.textContent = '--';
 
-  tableHead.innerHTML = '<tr><th>Upload CSV to view data table</th></tr>';
+  tableHead.innerHTML = '<tr><th>Upload CSV/Excel to view data table</th></tr>';
   tableBody.innerHTML = '<tr><td class="empty-table-cell">No data loaded yet</td></tr>';
   previewRowBadge.textContent = '0 records';
 
@@ -346,7 +342,7 @@ function clearData() {
   }
   chartPlaceholder.classList.remove('hidden');
   activeChartTitle.textContent = 'Statistical Visualization';
-  activeChartSubtitle.textContent = 'Upload a CSV file and choose axes to request chart from Python backend.';
+  activeChartSubtitle.textContent = 'Upload a CSV or Excel file and choose axes to request chart from Python backend.';
 
   showToast('Dataset cleared and file deleted from server storage.', 'info');
 }
@@ -417,7 +413,7 @@ async function triggerVisualizationRequest() {
     chartLoadingOverlay.classList.add('hidden');
 
     if (!res.ok) {
-      throw new Error(data.error || 'Visualization error');
+      throw new Error(data.detail || data.error || 'Visualization error');
     }
 
     renderVisualResult(data);
@@ -430,9 +426,9 @@ async function triggerVisualizationRequest() {
 function renderVisualResult(data) {
   state.currentChartBase64 = data.image_base64;
 
-  // Update titles without aggregation
-  activeChartTitle.textContent = `${state.selectedY} by ${state.selectedX}`;
-  activeChartSubtitle.textContent = `${state.chartType.toUpperCase()} Plot • Direct Column Visualization`;
+  // Update titles
+  activeChartTitle.textContent = data.chart_title || `${state.selectedY} by ${state.selectedX}`;
+  activeChartSubtitle.textContent = `${state.chartType.toUpperCase()} Plot • Metriviz Statistical Visualization`;
 
   // Update NumPy statistical KPIs
   if (data.summary_stats) {
@@ -655,7 +651,7 @@ function saveSavedChartsToStorage() {
       palette: c.palette,
       timestamp: c.timestamp
     }));
-    localStorage.setItem('visualcsv_saved_charts', JSON.stringify(safeList));
+    localStorage.setItem('metriviz_saved_charts', JSON.stringify(safeList));
   } catch (e) {
     console.error('Storage error', e);
   }
@@ -663,7 +659,7 @@ function saveSavedChartsToStorage() {
 
 function loadSavedChartsFromStorage() {
   try {
-    const raw = localStorage.getItem('visualcsv_saved_charts');
+    const raw = localStorage.getItem('metriviz_saved_charts') || localStorage.getItem('visualcsv_saved_charts');
     if (raw) state.savedCharts = JSON.parse(raw);
   } catch (e) {
     state.savedCharts = [];
